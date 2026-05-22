@@ -251,11 +251,14 @@ Field check sequence:
 
 ## Project Documentation Index
 
+- [RELEASE_NOTES.md](RELEASE_NOTES.md)
 - [CHANGELOG.md](CHANGELOG.md)
 - [CONTRIBUTING.md](CONTRIBUTING.md)
 - [SECURITY.md](SECURITY.md)
 - [SUPPORT.md](SUPPORT.md)
 - [docs/CODE_REFERENCE.md](docs/CODE_REFERENCE.md)
+- [GitHub Issue Templates](.github/ISSUE_TEMPLATE)
+- [GitHub PR Template](.github/pull_request_template.md)
 
 ## Repository Structure
 
