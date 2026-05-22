@@ -128,12 +128,30 @@ Recommended assignment:
   - SSID: `WLC-SETUP`
   - Password: `wlc-setup`
 - Embedded web UI (served from firmware, no CDN).
+- Adaptive responsive dashboard UI for desktop, tablet, and mobile screens.
 - OTA update endpoint for `.bin` uploads.
 - NVS persistence:
   - User settings.
   - Runtime statistics.
   - Reset diagnostics and boot counter.
 - Loop watchdog support and heartbeat logs.
+
+## What This Firmware Calculates and Tracks
+
+- Pumped water volume in liters, estimated from configured pump productivity (`pumpFlowLpm`) and real pump runtime.
+- Pump runtime in seconds (`totalPumpRuntimeSeconds`).
+- Number of fill cycles (`fillCycles`), incremented when a new fill sequence starts.
+- Number of emergency alarm shutdowns (`alarmCount`), incremented when upper level alarm condition is triggered.
+
+Volume formula used by firmware:
+
+```text
+liters_delta = pumpFlowLpm * elapsedMs / 60000
+```
+
+Where:
+- `pumpFlowLpm` is configured in Settings UI and stored in NVS.
+- `elapsedMs` is measured active pump time between loop ticks.
 
 ## Software Architecture
 
@@ -172,6 +190,12 @@ Recommended assignment:
 - Settings: timeout, flow, relay mapping, sensor logic.
 - OTA Update: firmware upload progress.
 - System: reboot, reset statistics, factory reset, test run.
+
+### Responsive UI Behavior
+
+- The dashboard uses adaptive CSS breakpoints for tablets and phones.
+- Navigation switches to mobile sidebar behavior on smaller screens.
+- Forms and cards reflow to one-column layout for readable setup on mobile devices.
 
 ### Key Endpoints
 - `GET /api/status`
