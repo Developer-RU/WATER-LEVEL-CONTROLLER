@@ -33,6 +33,86 @@ The control logic uses two float sensors installed on the tank side wall:
 
 All sensor inputs use `INPUT_PULLUP` logic in firmware with configurable trigger interpretation (`Closed` or `Open`).
 
+## Electrical Wiring Diagram
+
+### Functional Layout
+
+```mermaid
+flowchart LR
+    WELL[Well] --> PUMP[Pump]
+    PUMP --> TANK[Eurocube Tank]
+
+    LOWER[Lower Float Sensor<br/>Operational Trigger] --> ESP[ESP32 Relay Controller]
+    UPPER[Upper Float Sensor<br/>Emergency High Level] --> ESP
+    BTN[Setup Button] --> ESP
+
+    ESP --> RLYP[Pump Relay Channel]
+    ESP --> RLYA[Alarm Relay Channel]
+
+    RLYP --> PUMP
+    RLYA --> ALARM[Alarm Buzzer/Lamp]
+```
+
+### ESP32 GPIO Mapping Used by Firmware
+
+| Function | Symbol in Code | ESP32 GPIO |
+|---|---|---:|
+| Relay channel 1 control | `RELAY_1_PIN` | 25 |
+| Relay channel 2 control | `RELAY_2_PIN` | 26 |
+| Relay channel 3 control | `RELAY_3_PIN` | 32 |
+| Relay channel 4 control | `RELAY_4_PIN` | 33 |
+| Lower float sensor input | `LOWER_LEVEL_SENSOR_PIN` | 22 |
+| Upper float sensor input | `UPPER_LEVEL_SENSOR_PIN` | 18 |
+| Setup button input | `SETUP_BUTTON_PIN` | 23 |
+
+### Relay Board Connection Guide
+
+#### For 2-Channel Relay Boards
+
+| Board terminal | Connect to |
+|---|---|
+| IN1 | ESP32 GPIO 25 (Relay 1) |
+| IN2 | ESP32 GPIO 26 (Relay 2) |
+| VCC | 5V (or board-rated supply) |
+| GND | ESP32 GND (common ground required) |
+
+Recommended assignment:
+- Pump output on Relay 1.
+- Alarm output on Relay 2.
+
+#### For 4-Channel Relay Boards
+
+| Board terminal | Connect to |
+|---|---|
+| IN1 | ESP32 GPIO 25 (Relay 1) |
+| IN2 | ESP32 GPIO 26 (Relay 2) |
+| IN3 | ESP32 GPIO 32 (Relay 3) |
+| IN4 | ESP32 GPIO 33 (Relay 4) |
+| VCC | 5V (or board-rated supply) |
+| GND | ESP32 GND (common ground required) |
+
+Recommended assignment:
+- Pump output on Relay 1 (default).
+- Alarm output on Relay 2 (default).
+- Relays 3 and 4 reserved for expansion.
+
+### Float Sensor Wiring Notes
+
+- Both level sensors are dry-contact side-mounted switches.
+- Inputs are configured as `INPUT_PULLUP`.
+- Electrical trigger meaning is configured in software:
+  - `Closed`: triggered when contact closes to GND.
+  - `Open`: triggered when contact opens.
+- Upper sensor has strict emergency priority and always forces pump stop.
+
+### Safety and Electrical Best Practices
+
+- Use an external contactor/starter if pump current exceeds relay board rating.
+- Always install fuses/circuit breakers according to local electrical code.
+- Keep low-voltage control wiring physically separated from AC mains wiring.
+- Use surge protection and proper earthing in pump installations.
+- Validate relay active level (`RELAY_ACTIVE_LOW`) for your exact board revision before commissioning.
+
 ## Main Features
 
 - Automatic finite-state fill control:
