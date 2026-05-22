@@ -7,7 +7,10 @@ The format is based on Keep a Changelog and this project follows Semantic Versio
 ## [Unreleased]
 
 ### Added
-- Placeholder for future release notes.
+- Release process and repository governance documentation.
+- Expanded technical documentation set for architecture and operations.
+- Field acceptance test plan and troubleshooting runbook.
+- Code of conduct and GitHub issue/PR templates.
 
 ## [1.0.0] - 2026-05-22
 

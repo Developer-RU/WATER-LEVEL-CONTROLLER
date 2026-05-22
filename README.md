@@ -254,9 +254,15 @@ Field check sequence:
 - [RELEASE_NOTES.md](RELEASE_NOTES.md)
 - [CHANGELOG.md](CHANGELOG.md)
 - [CONTRIBUTING.md](CONTRIBUTING.md)
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 - [SECURITY.md](SECURITY.md)
 - [SUPPORT.md](SUPPORT.md)
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - [docs/CODE_REFERENCE.md](docs/CODE_REFERENCE.md)
+- [docs/OPERATIONS.md](docs/OPERATIONS.md)
+- [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
+- [docs/ACCEPTANCE_TEST_PLAN.md](docs/ACCEPTANCE_TEST_PLAN.md)
+- [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md)
 - [GitHub Issue Templates](.github/ISSUE_TEMPLATE)
 - [GitHub PR Template](.github/pull_request_template.md)
 
@@ -281,7 +287,12 @@ src/
   storage.cpp
   webserver.cpp
 docs/
+  ACCEPTANCE_TEST_PLAN.md
+  ARCHITECTURE.md
   CODE_REFERENCE.md
+  OPERATIONS.md
+  RELEASE_CHECKLIST.md
+  TROUBLESHOOTING.md
   screenshots/
 platformio.ini
 ```
