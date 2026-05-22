@@ -153,6 +153,22 @@ Where:
 - `pumpFlowLpm` is configured in Settings UI and stored in NVS.
 - `elapsedMs` is measured active pump time between loop ticks.
 
+### Metrics Validation Examples
+
+| Scenario | Input | Expected result |
+|---|---|---|
+| Water volume accumulation | `pumpFlowLpm = 50`, active pump runtime `elapsedMs = 120000` | `liters_delta = 50 * 120000 / 60000 = 100 L` |
+| Fill cycle counting | Lower sensor triggers while pump is OFF (new fill start) | `fillCycles` increases by `+1` |
+| Emergency shutdown counting | Upper sensor becomes active and alarm state is entered | `alarmCount` increases by `+1`, pump relay turns OFF |
+| Runtime accumulation | Pump runs continuously for 15 minutes | `totalPumpRuntimeSeconds` increases by about `900 s` |
+
+Recommended field check sequence:
+1. Set known flow value in Settings (for example `10.0 L/min`).
+2. Start a controlled test run for a measured duration (for example 6 minutes).
+3. Compare expected liters (`flow * minutes`) with dashboard `Total Water`.
+4. Trigger upper sensor once and verify `Alarms` increments by exactly one.
+5. Trigger one complete refill event and verify `Cycles` increments by exactly one.
+
 ## Software Architecture
 
 ### Core Modules
