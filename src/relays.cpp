@@ -7,7 +7,8 @@ void RelayManager::begin() {
   for (uint8_t index = 0; index < 4; ++index) {
     if (pins[index] >= 0) {
       pinMode(pins[index], OUTPUT);
-      digitalWrite(pins[index], activeLevel() ? HIGH : LOW);
+      // Initialize in OFF state to avoid startup relay pulse.
+      digitalWrite(pins[index], activeLevel() ? LOW : HIGH);
     }
     relays_[index] = false;
   }

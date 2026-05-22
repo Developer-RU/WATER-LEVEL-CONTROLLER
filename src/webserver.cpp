@@ -206,6 +206,7 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
           <div class="card"><div class="label">Cycles</div><div class="value" id="cycleCount">0</div><div class="sub">Fill starts</div></div>
           <div class="card"><div class="label">Alarms</div><div class="value" id="alarmCount">0</div><div class="sub">Emergency shutdowns</div></div>
           <div class="card"><div class="label">Stop Reason</div><div class="value" id="stopReason">NONE</div><div class="sub">Last pump stop cause</div></div>
+          <div class="card"><div class="label">Reset Diagnostics</div><div class="value" id="bootResetReason">UNKNOWN</div><div class="sub" id="prevResetReason">Prev: UNKNOWN | Boots: 0</div></div>
         </div>
         <div class="setup-notice" id="setupNotice">
           <strong>Automatic control disabled.</strong> Relays frozen. Sensors paused.
@@ -390,6 +391,8 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
       document.getElementById('cycleCount').textContent = status.fillCycles;
       document.getElementById('alarmCount').textContent = status.alarmCount;
       document.getElementById('stopReason').textContent = status.pumpActive ? 'RUNNING' : (status.lastPumpStopReason || 'NONE');
+      document.getElementById('bootResetReason').textContent = status.bootResetReason || 'UNKNOWN';
+      document.getElementById('prevResetReason').textContent = `Prev: ${status.previousResetReason || 'UNKNOWN'} | Boots: ${status.bootCount || 0}`;
       document.getElementById('setupModeBanner').style.display = setupActive ? 'block' : 'none';
       document.getElementById('setupModeBadge').textContent = setupActive
         ? (testRunActive ? 'SETUP MODE TEST RUN' : 'SETUP MODE ACTIVE')
@@ -773,6 +776,9 @@ String WebServerManager::buildStatusJson() const {
   json += "\"setupModeActive\":" + String(runtime_->setupModeActive ? "true" : "false") + ",";
   json += "\"testRunActive\":" + String(runtime_->testRunActive ? "true" : "false") + ",";
   json += "\"testRunRemainingSeconds\":" + String(runtime_->testRunRemainingSeconds) + ",";
+  json += "\"bootResetReason\":\"" + jsonEscape(runtime_->bootResetReason) + "\",";
+  json += "\"previousResetReason\":\"" + jsonEscape(runtime_->previousResetReason) + "\",";
+  json += "\"bootCount\":" + String(runtime_->bootCount) + ",";
   json += "\"controlState\":" + String(static_cast<uint8_t>(runtime_->controlState)) + ",";
   json += "\"wifiActive\":" + String(runtime_->wifiActive ? "true" : "false") + ",";
   json += "\"webServerActive\":" + String(runtime_->webServerActive ? "true" : "false") + ",";

@@ -62,6 +62,9 @@ struct RuntimeState {
   uint32_t testRunStartedAtMs = 0;
   uint32_t testRunTimeoutSeconds = 0;
   uint32_t testRunRemainingSeconds = 0;
+  String bootResetReason = "UNKNOWN";
+  String previousResetReason = "UNKNOWN";
+  uint32_t bootCount = 0;
   bool lowerWaitForClear = false;
   uint32_t fillRemainingSeconds = 0;
   uint32_t fillDurationSeconds = 0;

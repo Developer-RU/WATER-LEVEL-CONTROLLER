@@ -1,6 +1,8 @@
 #include <Arduino.h>
 #include <LittleFS.h>
+#include <Preferences.h>
 #include <WiFi.h>
+#include <esp_system.h>
 
 #include "config.h"
 #include "ota.h"
@@ -24,7 +26,110 @@ static RuntimeState gRuntime;
 static uint32_t gBootMs = 0;
 static uint32_t gSetupApStartAtMs = 0;
 static uint32_t gLastStatsSaveMs = 0;
+static uint32_t gLastHeartbeatMs = 0;
+static uint32_t gLastWdtFeedMs = 0;
 static bool gSetupButtonHeld = false;
+static constexpr const char *DIAG_NAMESPACE = "wlc-diag";
+
+static bool hasTimeReached(uint32_t nowMs, uint32_t deadlineMs) {
+  return static_cast<int32_t>(nowMs - deadlineMs) >= 0;
+}
+
+static const char *resetReasonToText(esp_reset_reason_t reason) {
+  switch (reason) {
+    case ESP_RST_POWERON:
+      return "POWERON";
+    case ESP_RST_EXT:
+      return "EXTERNAL_PIN";
+    case ESP_RST_SW:
+      return "SOFTWARE";
+    case ESP_RST_PANIC:
+      return "PANIC";
+    case ESP_RST_INT_WDT:
+      return "INT_WDT";
+    case ESP_RST_TASK_WDT:
+      return "TASK_WDT";
+    case ESP_RST_WDT:
+      return "OTHER_WDT";
+    case ESP_RST_DEEPSLEEP:
+      return "DEEPSLEEP";
+    case ESP_RST_BROWNOUT:
+      return "BROWNOUT";
+    case ESP_RST_SDIO:
+      return "SDIO";
+    default:
+      return "UNKNOWN";
+  }
+}
+
+static void persistResetDiagnostics() {
+  Preferences prefs;
+  if (!prefs.begin(DIAG_NAMESPACE, false)) {
+    Serial.println("Warning: failed to open diagnostics NVS namespace");
+    return;
+  }
+
+  gRuntime.previousResetReason = prefs.getString("lastReason", "UNKNOWN");
+  const uint32_t previousBootCount = prefs.getUInt("bootCount", 0);
+  gRuntime.bootCount = previousBootCount + 1;
+
+  prefs.putString("lastReason", gRuntime.bootResetReason);
+  prefs.putUInt("bootCount", gRuntime.bootCount);
+  prefs.end();
+
+  Serial.printf("Previous reset reason: %s\n", gRuntime.previousResetReason.c_str());
+  Serial.printf("Boot count: %lu\n", static_cast<unsigned long>(gRuntime.bootCount));
+}
+
+static void logHeartbeat(uint32_t nowMs) {
+  if (!hasTimeReached(nowMs, gLastHeartbeatMs + HEARTBEAT_LOG_INTERVAL_MS)) {
+    return;
+  }
+
+  gLastHeartbeatMs = nowMs;
+  Serial.printf("Heartbeat: mode=%s setup=%s test=%s pump=%s alarm=%s lower=%s upper=%s freeHeap=%u\n",
+                gRuntime.systemMode == SystemMode::Setup ? "SETUP" : "WORK",
+                gRuntime.setupModeActive ? "1" : "0",
+                gRuntime.testRunActive ? "1" : "0",
+                gRuntime.pumpActive ? "1" : "0",
+                gRuntime.alarmActive ? "1" : "0",
+                gRuntime.lowerSensorActive ? "1" : "0",
+                gRuntime.upperSensorActive ? "1" : "0",
+                static_cast<unsigned>(ESP.getFreeHeap()));
+}
+
+static void feedWatchdogIfNeeded(uint32_t nowMs) {
+#if WATCHDOG_ENABLED
+  if (!hasTimeReached(nowMs, gLastWdtFeedMs + WATCHDOG_FEED_INTERVAL_MS)) {
+    return;
+  }
+
+  gLastWdtFeedMs = nowMs;
+  feedLoopWDT();
+#else
+  (void)nowMs;
+#endif
+}
+
+static bool isSetupButtonHeldStableAtBoot() {
+  // Require stable hold for a short window to avoid false setup-mode arming.
+  uint8_t pressedSamples = 0;
+  static constexpr uint8_t totalSamples = 8;
+  static constexpr uint32_t sampleIntervalMs = 8;
+
+  for (uint8_t sample = 0; sample < totalSamples; ++sample) {
+    if (digitalRead(SETUP_BUTTON_PIN) == BUTTON_ACTIVE_LEVEL) {
+      pressedSamples++;
+    }
+
+    const uint32_t untilMs = millis() + sampleIntervalMs;
+    while (!hasTimeReached(millis(), untilMs)) {
+      yield();
+    }
+  }
+
+  return pressedSamples == totalSamples;
+}
 
 static uint32_t configuredTopOffSeconds() {
   uint32_t minutes = gSettings.fillTimeoutMinutes;
@@ -255,7 +360,7 @@ static void processControlLoop(uint32_t nowMs) {
       return;
     }
 
-    if (nowMs >= gRuntime.fillDeadlineMs) {
+    if (hasTimeReached(nowMs, gRuntime.fillDeadlineMs)) {
       gRuntime.pumpActive = false;
       gRuntime.controlState = ControlState::Standby;
       gRuntime.fillRemainingSeconds = 0;
@@ -300,9 +405,21 @@ static void flushStatisticsIfNeeded(uint32_t nowMs) {
 void setup() {
   Serial.begin(115200);
   gBootMs = millis();
+  gLastHeartbeatMs = gBootMs;
+  gLastWdtFeedMs = gBootMs;
+
+  const esp_reset_reason_t resetReason = esp_reset_reason();
+  gRuntime.bootResetReason = resetReasonToText(resetReason);
+  Serial.printf("Boot reset reason: %s (%d)\n", gRuntime.bootResetReason.c_str(), static_cast<int>(resetReason));
+  persistResetDiagnostics();
+
+#if WATCHDOG_ENABLED
+  enableLoopWDT();
+  Serial.println("Loop WDT enabled");
+#endif
 
   pinMode(SETUP_BUTTON_PIN, INPUT_PULLUP);
-  gSetupButtonHeld = (digitalRead(SETUP_BUTTON_PIN) == BUTTON_ACTIVE_LEVEL);
+  gSetupButtonHeld = isSetupButtonHeldStableAtBoot();
 
   ensureFilesystem();
 
@@ -331,7 +448,7 @@ void setup() {
 void loop() {
   const uint32_t nowMs = millis();
 
-  if (gRuntime.setupModeArmed && !gRuntime.webServerActive && nowMs >= gSetupApStartAtMs) {
+  if (gRuntime.setupModeArmed && !gRuntime.webServerActive && hasTimeReached(nowMs, gSetupApStartAtMs)) {
     startSetupPortal();
   }
 
@@ -358,6 +475,8 @@ void loop() {
     gRuntime.fillDeadlineMs = 0;
     gRuntime.topOffStartedAtMs = 0;
     gRelays.allOff();
+    feedWatchdogIfNeeded(nowMs);
+    logHeartbeat(nowMs);
     gOta.loop();
     return;
   }
@@ -369,6 +488,9 @@ void loop() {
   processControlLoop(nowMs);
   gStatisticsManager.update(gStatistics, gRuntime.pumpActive, gSettings.pumpFlowLpm, nowMs);
   flushStatisticsIfNeeded(nowMs);
+
+  feedWatchdogIfNeeded(nowMs);
+  logHeartbeat(nowMs);
 
   gOta.loop();
 
