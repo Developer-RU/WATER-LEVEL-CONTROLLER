@@ -9,8 +9,14 @@
 #include "statistics.h"
 #include "storage.h"
 
+/**
+ * @brief HTTP API and embedded dashboard for setup and diagnostics mode.
+ */
 class WebServerManager {
 public:
+  /**
+   * @brief Injects module dependencies and registers all routes.
+   */
   void configure(StorageManager *storage,
                  RelayManager *relays,
                  SensorManager *sensors,
@@ -18,8 +24,11 @@ public:
                  AppStatistics *statistics,
                  RuntimeState *runtime,
                  OtaManager *ota);
+  /** @brief Starts AsyncWebServer listener on port 80. */
   void start();
+  /** @brief Stops AsyncWebServer listener. */
   void stop();
+  /** @brief Returns true when web server is currently running. */
   bool active() const;
 
 private:

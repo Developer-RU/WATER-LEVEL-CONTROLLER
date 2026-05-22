@@ -4,6 +4,7 @@
 
 #include "config.h"
 
+// Embedded single-page dashboard served from firmware flash.
 static const char INDEX_HTML[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
 <html lang="en">
@@ -564,6 +565,7 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
 </html>
 )rawliteral";
 
+// Injects runtime dependencies used by HTTP handlers.
 void WebServerManager::configure(StorageManager *storage,
                                  RelayManager *relays,
                                  SensorManager *sensors,
@@ -582,6 +584,7 @@ void WebServerManager::configure(StorageManager *storage,
   registerRoutes();
 }
 
+// Starts HTTP server once all dependencies are configured.
 void WebServerManager::start() {
   if (!configured_ || active_) {
     return;
@@ -591,6 +594,7 @@ void WebServerManager::start() {
   active_ = true;
 }
 
+// Stops HTTP server and marks manager inactive.
 void WebServerManager::stop() {
   if (!active_) {
     return;
@@ -604,6 +608,7 @@ bool WebServerManager::active() const {
   return active_;
 }
 
+// Registers SPA routes and REST endpoints for setup, control and OTA.
 void WebServerManager::registerRoutes() {
   server_.on("/", HTTP_GET, [this](AsyncWebServerRequest *request) {
     request->send_P(200, "text/html", INDEX_HTML);
@@ -770,6 +775,7 @@ void WebServerManager::registerRoutes() {
   });
 }
 
+// Builds consolidated status payload consumed by live dashboard polling.
 String WebServerManager::buildStatusJson() const {
   String json = "{";
   json += "\"device\":\"" + String(DEVICE_NAME) + "\",";
@@ -811,6 +817,7 @@ String WebServerManager::buildStatusJson() const {
   return json;
 }
 
+// Builds payload with editable settings only.
 String WebServerManager::buildSettingsJson() const {
   String json = "{";
   json += "\"fillTimeoutMinutes\":" + String(settings_->fillTimeoutMinutes) + ",";
@@ -823,6 +830,7 @@ String WebServerManager::buildSettingsJson() const {
   return json;
 }
 
+// Builds payload with persisted cumulative counters.
 String WebServerManager::buildStatisticsJson() const {
   String json = "{";
   json += "\"totalPumpRuntimeSeconds\":" + String(statistics_->totalPumpRuntimeSeconds) + ",";
@@ -833,6 +841,7 @@ String WebServerManager::buildStatisticsJson() const {
   return json;
 }
 
+// Builds payload with compile-time factory defaults.
 String WebServerManager::buildDefaultsJson() const {
   const AppSettings defaults = StorageManager::factorySettings();
   String json = "{";
@@ -846,6 +855,7 @@ String WebServerManager::buildDefaultsJson() const {
   return json;
 }
 
+// Parses URL-encoded settings form into typed settings structure.
 bool WebServerManager::parseSettingsRequest(AsyncWebServerRequest *request, AppSettings &settings) const {
   if (!request->hasParam("fillTimeoutMinutes", true) ||
       !request->hasParam("pumpFlowLpm", true) ||
@@ -865,6 +875,7 @@ bool WebServerManager::parseSettingsRequest(AsyncWebServerRequest *request, AppS
   return true;
 }
 
+// Escapes string for safe embedding into JSON payload.
 String WebServerManager::jsonEscape(const String &value) {
   String out;
   out.reserve(value.length() + 8);

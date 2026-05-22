@@ -2,6 +2,7 @@
 
 #include <Update.h>
 
+// Resets OTA manager state between firmware upload sessions.
 void OtaManager::begin() {
   started_ = true;
   restartScheduled_ = false;
@@ -9,6 +10,7 @@ void OtaManager::begin() {
   errorMessage_.clear();
 }
 
+// Opens flash update session before first data chunk is written.
 bool OtaManager::handleUploadStart(size_t contentLength, const String &filename) {
   (void)contentLength;
   errorMessage_.clear();
@@ -27,6 +29,7 @@ bool OtaManager::handleUploadStart(size_t contentLength, const String &filename)
   return true;
 }
 
+// Writes one OTA upload chunk and aborts on mismatch.
 bool OtaManager::handleUploadChunk(uint8_t *data, size_t len) {
   if (errorMessage_.length() > 0) {
     return false;
@@ -42,6 +45,7 @@ bool OtaManager::handleUploadChunk(uint8_t *data, size_t len) {
   return true;
 }
 
+// Finalizes and validates update image.
 bool OtaManager::handleUploadEnd() {
   if (errorMessage_.length() > 0) {
     return false;
@@ -56,11 +60,13 @@ bool OtaManager::handleUploadEnd() {
   return true;
 }
 
+// Schedules deferred restart to complete firmware switch.
 void OtaManager::scheduleRestart(uint32_t delayMs) {
   restartScheduled_ = true;
   restartAtMs_ = millis() + delayMs;
 }
 
+// Executes scheduled restart in cooperative loop context.
 void OtaManager::loop() {
   if (restartScheduled_ && millis() >= restartAtMs_) {
     Serial.println("Restarting after OTA");

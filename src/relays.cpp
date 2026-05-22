@@ -2,6 +2,7 @@
 
 #include "config.h"
 
+// Initializes all configured relay pins and sets deterministic OFF levels.
 void RelayManager::begin() {
   const int pins[4] = {RELAY_1_PIN, RELAY_2_PIN, RELAY_3_PIN, RELAY_4_PIN};
   for (uint8_t index = 0; index < 4; ++index) {
@@ -14,6 +15,7 @@ void RelayManager::begin() {
   }
 }
 
+// Applies logical relay state to electrical output level.
 void RelayManager::setRelay(uint8_t relayNumber, bool enabled) {
   if (!isValidRelay(relayNumber)) {
     return;
@@ -27,6 +29,7 @@ void RelayManager::setRelay(uint8_t relayNumber, bool enabled) {
   }
 }
 
+// Returns cached relay state to avoid GPIO reads.
 bool RelayManager::relayState(uint8_t relayNumber) const {
   if (!isValidRelay(relayNumber)) {
     return false;
@@ -34,6 +37,7 @@ bool RelayManager::relayState(uint8_t relayNumber) const {
   return relays_[relayNumber - 1];
 }
 
+// Helper to disable every relay channel.
 void RelayManager::allOff() {
   for (uint8_t relayNumber = 1; relayNumber <= 4; ++relayNumber) {
     setRelay(relayNumber, false);

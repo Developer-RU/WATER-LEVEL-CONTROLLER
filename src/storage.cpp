@@ -5,6 +5,7 @@
 static constexpr const char *SETTINGS_NAMESPACE = "wlc-settings";
 static constexpr const char *STATS_NAMESPACE = "wlc-stats";
 
+// Builds default settings object from compile-time constants.
 AppSettings StorageManager::factorySettings() {
   AppSettings settings;
   settings.fillTimeoutMinutes = DEFAULT_FILL_TIMEOUT_MINUTES;
@@ -20,6 +21,7 @@ AppStatistics StorageManager::factoryStatistics() {
   return AppStatistics{};
 }
 
+// Ensures loaded settings are safe and within supported limits.
 void StorageManager::sanitizeSettings(AppSettings &settings) {
   if (settings.fillTimeoutMinutes < MIN_FILL_TIMEOUT_MINUTES) {
     settings.fillTimeoutMinutes = MIN_FILL_TIMEOUT_MINUTES;
@@ -58,6 +60,7 @@ void StorageManager::sanitizeSettings(AppSettings &settings) {
   }
 }
 
+// Loads settings and falls back to defaults if required keys are missing.
 bool StorageManager::loadSettings(AppSettings &settings) {
   Preferences prefs;
   if (!prefs.begin(SETTINGS_NAMESPACE, true)) {
@@ -82,6 +85,7 @@ bool StorageManager::loadSettings(AppSettings &settings) {
   return true;
 }
 
+// Stores validated settings values in NVS.
 bool StorageManager::saveSettings(const AppSettings &settings) {
   AppSettings sanitized = settings;
   sanitizeSettings(sanitized);
@@ -101,6 +105,7 @@ bool StorageManager::saveSettings(const AppSettings &settings) {
   return ok;
 }
 
+// Loads persisted runtime statistics from NVS.
 bool StorageManager::loadStatistics(AppStatistics &statistics) {
   Preferences prefs;
   if (!prefs.begin(STATS_NAMESPACE, true)) {
@@ -121,6 +126,7 @@ bool StorageManager::loadStatistics(AppStatistics &statistics) {
   return true;
 }
 
+// Saves runtime statistics to NVS.
 bool StorageManager::saveStatistics(const AppStatistics &statistics) {
   Preferences prefs;
   if (!prefs.begin(STATS_NAMESPACE, false)) {

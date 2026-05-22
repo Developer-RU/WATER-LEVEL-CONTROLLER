@@ -4,11 +4,20 @@
 
 #include "config.h"
 
+/**
+ * @brief Electrical interpretation for a level switch input.
+ *
+ * Closed means the contact is considered triggered when the GPIO reads LOW
+ * (with INPUT_PULLUP topology). Open means triggered when GPIO reads HIGH.
+ */
 enum class SensorLogic : uint8_t {
   Closed = 0,
   Open = 1,
 };
 
+/**
+ * @brief Main finite-state machine states for automatic fill control.
+ */
 enum class ControlState : uint8_t {
   Standby = 0,
   FillingUntilLowerClears = 1,
@@ -16,11 +25,17 @@ enum class ControlState : uint8_t {
   Alarm = 3,
 };
 
+/**
+ * @brief High-level operation mode.
+ */
 enum class SystemMode : uint8_t {
   Work = 0,
   Setup = 1,
 };
 
+/**
+ * @brief Reason why pump output was switched OFF.
+ */
 enum class PumpStopReason : uint8_t {
   None = 0,
   TopOffDone = 1,
@@ -30,6 +45,9 @@ enum class PumpStopReason : uint8_t {
   TestRunTimeout = 5,
 };
 
+/**
+ * @brief Persisted user settings loaded from NVS.
+ */
 struct AppSettings {
   uint16_t fillTimeoutMinutes = DEFAULT_FILL_TIMEOUT_MINUTES;
   float pumpFlowLpm = DEFAULT_PUMP_FLOW_LPM;
@@ -39,6 +57,9 @@ struct AppSettings {
   SensorLogic upperSensorLogic = SensorLogic::Closed;
 };
 
+/**
+ * @brief Persisted cumulative telemetry counters.
+ */
 struct AppStatistics {
   uint32_t totalPumpRuntimeSeconds = 0;
   double totalWaterLiters = 0.0;
@@ -46,6 +67,9 @@ struct AppStatistics {
   uint32_t alarmCount = 0;
 };
 
+/**
+ * @brief Volatile runtime state consumed by control loop and web API.
+ */
 struct RuntimeState {
   SystemMode systemMode = SystemMode::Work;
   ControlState controlState = ControlState::Standby;
@@ -72,10 +96,16 @@ struct RuntimeState {
   uint32_t topOffStartedAtMs = 0;
 };
 
+/**
+ * @brief Converts sensor logic enum to stable API/UI text.
+ */
 inline const char *sensorLogicToText(SensorLogic logic) {
   return logic == SensorLogic::Closed ? "Closed" : "Open";
 }
 
+/**
+ * @brief Converts stop reason enum to stable API/UI text.
+ */
 inline const char *pumpStopReasonToText(PumpStopReason reason) {
   switch (reason) {
     case PumpStopReason::TopOffDone:

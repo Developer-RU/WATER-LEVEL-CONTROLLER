@@ -4,12 +4,20 @@
 
 #include "app_types.h"
 
+/**
+ * @brief Debounced sampling for lower/upper dry-contact level sensors.
+ */
 class SensorManager {
 public:
+  /** @brief Configures sensor pins and applies logic from settings. */
   void begin(const AppSettings &settings);
+  /** @brief Updates trigger logic without reinitializing GPIOs. */
   void applySettings(const AppSettings &settings);
+  /** @brief Samples and debounces both channels. */
   void update(uint32_t nowMs);
+  /** @brief Returns debounced trigger state of lower sensor. */
   bool lowerTriggered() const;
+  /** @brief Returns debounced trigger state of upper sensor. */
   bool upperTriggered() const;
 
 private:

@@ -12,6 +12,7 @@
 #include "storage.h"
 #include "webserver.h"
 
+// Global application services and state containers.
 static StorageManager gStorage;
 static RelayManager gRelays;
 static SensorManager gSensors;
@@ -31,10 +32,12 @@ static uint32_t gLastWdtFeedMs = 0;
 static bool gSetupButtonHeld = false;
 static constexpr const char *DIAG_NAMESPACE = "wlc-diag";
 
+// Wrap-safe check for millis() deadline crossing.
 static bool hasTimeReached(uint32_t nowMs, uint32_t deadlineMs) {
   return static_cast<int32_t>(nowMs - deadlineMs) >= 0;
 }
 
+// Human-readable reset reason for diagnostics API and serial logs.
 static const char *resetReasonToText(esp_reset_reason_t reason) {
   switch (reason) {
     case ESP_RST_POWERON:
@@ -62,6 +65,7 @@ static const char *resetReasonToText(esp_reset_reason_t reason) {
   }
 }
 
+// Persists boot diagnostics (previous reset reason and boot counter) in NVS.
 static void persistResetDiagnostics() {
   Preferences prefs;
   if (!prefs.begin(DIAG_NAMESPACE, false)) {
@@ -81,6 +85,7 @@ static void persistResetDiagnostics() {
   Serial.printf("Boot count: %lu\n", static_cast<unsigned long>(gRuntime.bootCount));
 }
 
+// Emits periodic heartbeat for field diagnostics.
 static void logHeartbeat(uint32_t nowMs) {
   if (!hasTimeReached(nowMs, gLastHeartbeatMs + HEARTBEAT_LOG_INTERVAL_MS)) {
     return;
@@ -98,6 +103,7 @@ static void logHeartbeat(uint32_t nowMs) {
                 static_cast<unsigned>(ESP.getFreeHeap()));
 }
 
+// Keeps loop watchdog fed at controlled cadence.
 static void feedWatchdogIfNeeded(uint32_t nowMs) {
 #if WATCHDOG_ENABLED
   if (!hasTimeReached(nowMs, gLastWdtFeedMs + WATCHDOG_FEED_INTERVAL_MS)) {
@@ -111,6 +117,7 @@ static void feedWatchdogIfNeeded(uint32_t nowMs) {
 #endif
 }
 
+// Samples setup button several times to avoid false arming on power transients.
 static bool isSetupButtonHeldStableAtBoot() {
   // Require stable hold for a short window to avoid false setup-mode arming.
   uint8_t pressedSamples = 0;
@@ -131,6 +138,7 @@ static bool isSetupButtonHeldStableAtBoot() {
   return pressedSamples == totalSamples;
 }
 
+// Converts configured top-off timeout from minutes to bounded seconds.
 static uint32_t configuredTopOffSeconds() {
   uint32_t minutes = gSettings.fillTimeoutMinutes;
   if (minutes < MIN_FILL_TIMEOUT_MINUTES) {
@@ -142,6 +150,7 @@ static uint32_t configuredTopOffSeconds() {
   return minutes * 60UL;
 }
 
+// Prints effective runtime settings to serial console.
 static void printSettings(const AppSettings &settings) {
   Serial.printf("Settings: timeout=%u min, flow=%.2f L/min, pumpRelay=%u, alarmRelay=%u, lower=%s, upper=%s\n",
                 settings.fillTimeoutMinutes,
@@ -152,6 +161,7 @@ static void printSettings(const AppSettings &settings) {
                 sensorLogicToText(settings.upperSensorLogic));
 }
 
+// Mounts LittleFS for future asset/file storage use.
 static void ensureFilesystem() {
   if (LittleFS.begin(true)) {
     Serial.println("LittleFS mounted successfully");
@@ -160,6 +170,7 @@ static void ensureFilesystem() {
   }
 }
 
+// Loads settings/statistics from NVS and self-heals with factory defaults.
 static bool loadPersistentState() {
   const bool settingsLoaded = gStorage.loadSettings(gSettings);
   const bool statisticsLoaded = gStorage.loadStatistics(gStatistics);
@@ -179,11 +190,13 @@ static bool loadPersistentState() {
   return settingsLoaded && statisticsLoaded;
 }
 
+// Applies persisted settings to hardware-facing modules.
 static void updateHardwareFromSettings() {
   gSensors.applySettings(gSettings);
   printSettings(gSettings);
 }
 
+// Switches controller into setup freeze mode.
 static void enterSetupMode() {
   gRuntime.systemMode = SystemMode::Setup;
   gRuntime.setupModeActive = true;
@@ -204,6 +217,7 @@ static void enterSetupMode() {
   Serial.println("Setup mode entered. All relays off and automation frozen.");
 }
 
+// Stops active setup test run and re-applies frozen setup behavior.
 static void stopSetupTestRun(const char *reason) {
   if (!gRuntime.testRunActive) {
     return;
@@ -227,6 +241,7 @@ static void stopSetupTestRun(const char *reason) {
   Serial.printf("Setup mode test run stopped: %s\n", reason);
 }
 
+// Starts dedicated setup access point and local web dashboard.
 static void startSetupPortal() {
   if (gRuntime.webServerActive) {
     return;
@@ -246,6 +261,7 @@ static void startSetupPortal() {
   Serial.printf("Setup AP started. SSID=%s IP=%s\n", SETUP_AP_SSID, WiFi.softAPIP().toString().c_str());
 }
 
+// Activates alarm channel and performs immediate pump stop.
 static void triggerAlarm(const char *reason, uint32_t nowMs) {
   if (!gRuntime.alarmActive) {
     gStatistics.alarmCount++;
@@ -264,6 +280,7 @@ static void triggerAlarm(const char *reason, uint32_t nowMs) {
   Serial.printf("Alarm triggered: %s\n", reason);
 }
 
+// Starts new filling cycle and waits for lower sensor to clear.
 static void startFill(uint32_t nowMs) {
   gRuntime.pumpActive = true;
   gRuntime.alarmActive = false;
@@ -282,6 +299,7 @@ static void startFill(uint32_t nowMs) {
                 static_cast<unsigned long>(gRuntime.fillDurationSeconds));
 }
 
+// Starts timed top-off countdown after lower sensor returns to normal.
 static void startTopOffCountdown(uint32_t nowMs) {
   if (gRuntime.fillDurationSeconds == 0) {
     gRuntime.fillDurationSeconds = configuredTopOffSeconds();
@@ -295,6 +313,7 @@ static void startTopOffCountdown(uint32_t nowMs) {
                 static_cast<unsigned long>(gRuntime.fillDurationSeconds));
 }
 
+// Resets top-off countdown if lower sensor becomes active again.
 static void resetTopOffCountdown(const char *reason) {
   if (gRuntime.controlState == ControlState::TopOffCountdown) {
     Serial.printf("Top-off countdown reset: %s\n", reason);
@@ -305,6 +324,7 @@ static void resetTopOffCountdown(const char *reason) {
   gRuntime.topOffStartedAtMs = 0;
 }
 
+// Main control finite-state machine for work mode and setup test-run mode.
 static void processControlLoop(uint32_t nowMs) {
   if (gRuntime.systemMode == SystemMode::Setup && !gRuntime.testRunActive) {
     return;
@@ -379,6 +399,7 @@ static void processControlLoop(uint32_t nowMs) {
   }
 }
 
+// Persists statistics either on idle windows or by periodic flush during runtime.
 static void flushStatisticsIfNeeded(uint32_t nowMs) {
   if (!gStatisticsManager.dirty()) {
     return;
@@ -402,6 +423,7 @@ static void flushStatisticsIfNeeded(uint32_t nowMs) {
   }
 }
 
+// Firmware setup phase: initializes peripherals, state, and optional setup mode.
 void setup() {
   Serial.begin(115200);
   gBootMs = millis();
@@ -445,6 +467,7 @@ void setup() {
   }
 }
 
+// Main loop: drives setup/test-run behavior, automation FSM, stats and OTA.
 void loop() {
   const uint32_t nowMs = millis();
 

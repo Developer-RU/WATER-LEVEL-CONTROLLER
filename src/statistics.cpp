@@ -1,23 +1,27 @@
 #include "statistics.h"
 
+// Initializes runtime accumulation state.
 void StatisticsManager::begin(uint32_t nowMs) {
   lastTickMs_ = nowMs;
   runtimeCarryMs_ = 0;
   dirty_ = false;
 }
 
+// Starts accounting for a new pump session.
 void StatisticsManager::onPumpStarted(uint32_t nowMs) {
   lastTickMs_ = nowMs;
   runtimeCarryMs_ = 0;
   dirty_ = true;
 }
 
+// Finalizes accounting window on pump stop.
 void StatisticsManager::onPumpStopped(uint32_t nowMs) {
   lastTickMs_ = nowMs;
   runtimeCarryMs_ = 0;
   dirty_ = true;
 }
 
+// Integrates elapsed time into runtime seconds and estimated liters.
 void StatisticsManager::update(AppStatistics &statistics, bool pumpActive, float flowLpm, uint32_t nowMs) {
   if (!pumpActive) {
     lastTickMs_ = nowMs;
