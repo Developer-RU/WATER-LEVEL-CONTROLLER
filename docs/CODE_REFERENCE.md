@@ -14,6 +14,45 @@ The firmware runs as a cooperative loop on ESP32 with the following pillars:
 
 ## Module Map
 
+## Public Interfaces By Header
+
+### [include/relays.h](../include/relays.h)
+- `RelayManager::begin()`: initializes relay GPIOs and forces all outputs OFF.
+- `RelayManager::setRelay(relayNumber, enabled)`: updates one channel in range `1..4`.
+- `RelayManager::relayState(relayNumber)`: returns cached output state.
+- `RelayManager::allOff()`: hard safety helper to disable all channels.
+
+### [include/sensors.h](../include/sensors.h)
+- `SensorManager::begin(settings)`: pin setup and initial logic assignment.
+- `SensorManager::applySettings(settings)`: updates trigger logic at runtime.
+- `SensorManager::update(nowMs)`: runs debounce state machine.
+- `SensorManager::lowerTriggered()` / `upperTriggered()`: debounced trigger flags.
+
+### [include/statistics.h](../include/statistics.h)
+- `StatisticsManager::begin(nowMs)`: resets runtime accumulator.
+- `StatisticsManager::onPumpStarted(nowMs)`: opens accounting window.
+- `StatisticsManager::onPumpStopped(nowMs)`: closes accounting window.
+- `StatisticsManager::update(...)`: accumulates runtime and liters while active.
+- `dirty()/clearDirty()`: persistence synchronization flag.
+
+### [include/storage.h](../include/storage.h)
+- `factorySettings()` and `factoryStatistics()`: compile-time defaults.
+- `loadSettings()/saveSettings()`: settings persistence API.
+- `loadStatistics()/saveStatistics()`: telemetry persistence API.
+- `resetStatistics()`: zeroes counters and persists.
+- `restoreFactorySettings()`: resets settings and stats together.
+
+### [include/ota.h](../include/ota.h)
+- `begin()`: initializes OTA internal state.
+- `handleUploadStart()/handleUploadChunk()/handleUploadEnd()`: upload lifecycle.
+- `scheduleRestart(delayMs)` and `loop()`: deferred reboot flow.
+- `hasError()/errorMessage()`: API-visible diagnostics.
+
+### [include/webserver.h](../include/webserver.h)
+- `configure(...)`: injects module dependencies.
+- `start()/stop()/active()`: AsyncWebServer lifecycle.
+- Route handlers serialize runtime/settings/statistics/defaults to JSON.
+
 ## Core Types
 
 Defined in [include/app_types.h](../include/app_types.h):

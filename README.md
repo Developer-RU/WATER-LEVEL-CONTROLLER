@@ -7,7 +7,10 @@
 ![Build](https://img.shields.io/badge/build-PlatformIO%20local-passing)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-Production-ready ESP32 firmware for autonomous well pump control and Eurocube water-level management using two side-mounted float sensors.
+Production-ready ESP32 firmware for fail-safe, two-sensor well pump automation and Eurocube tank level control.
+
+Suggested GitHub repository short description:
+"Fail-safe ESP32 water level controller with dual-float automation, local web dashboard, and OTA updates."
 
 This repository contains a complete solution with:
 - Automatic filling logic and emergency protection.
@@ -29,6 +32,7 @@ This repository contains a complete solution with:
 - [Configuration](#configuration)
 - [Validation Scenarios](#validation-scenarios)
 - [Project Documentation Index](#project-documentation-index)
+- [GitHub Wiki](#github-wiki)
 - [Repository Structure](#repository-structure)
 - [Screenshots](#screenshots)
 - [Safety Notes](#safety-notes)
@@ -263,8 +267,20 @@ Field check sequence:
 - [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
 - [docs/ACCEPTANCE_TEST_PLAN.md](docs/ACCEPTANCE_TEST_PLAN.md)
 - [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md)
+- [docs/WIKI_PUBLISHING.md](docs/WIKI_PUBLISHING.md)
 - [GitHub Issue Templates](.github/ISSUE_TEMPLATE)
 - [GitHub PR Template](.github/pull_request_template.md)
+
+## GitHub Wiki
+
+- [wiki/Home.md](wiki/Home.md)
+- [wiki/Architecture.md](wiki/Architecture.md)
+- [wiki/Configuration.md](wiki/Configuration.md)
+- [wiki/Control-Logic.md](wiki/Control-Logic.md)
+- [wiki/API-Reference.md](wiki/API-Reference.md)
+- [wiki/Operations-and-Maintenance.md](wiki/Operations-and-Maintenance.md)
+- [wiki/Troubleshooting.md](wiki/Troubleshooting.md)
+- [wiki/Release-and-Contribution.md](wiki/Release-and-Contribution.md)
 
 ## Repository Structure
 

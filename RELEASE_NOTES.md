@@ -1,5 +1,17 @@
 # Release Notes
 
+## Unreleased
+
+### Summary
+
+Repository governance and documentation expansion update.
+
+### Highlights
+
+- Added CI automation for PlatformIO build checks on pull requests and main branch updates.
+- Added repository ownership and dependency maintenance metadata (CODEOWNERS, Dependabot).
+- Added comprehensive GitHub Wiki pages covering architecture, control logic, API, operations, troubleshooting, and release flow.
+
 ## 1.0.0 - 2026-05-22
 
 ### Summary

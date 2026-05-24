@@ -1,0 +1,11 @@
+# Default code owners for all repository files
+* @Developer-RU
+
+# Firmware core
+/src/ @Developer-RU
+/include/ @Developer-RU
+
+# Documentation and governance
+/docs/ @Developer-RU
+/wiki/ @Developer-RU
+/.github/ @Developer-RU
